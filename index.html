@@ -3,105 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Logistics Manager Pro</title>
+    <title>Hub Manager | Redmi Optimized</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --amazon-blue: #232f3e; --amazon-orange: #ff9900; --success-green: #2ecc71; }
+        :root { --primary: #1a1a1a; --amazon-orange: #ff9900; --green: #2ecc71; }
         
         body, html { 
             margin: 0; padding: 0; height: 100%; width: 100%;
-            font-family: 'Segoe UI', sans-serif; background: #111; color: white;
-            overflow: hidden; /* Prevents accidental scrolling */
+            font-family: 'Roboto', sans-serif; background: #000; color: white;
+            overflow: hidden;
         }
 
-        /* Main Container - Full Screen Flex */
-        .app-container {
-            display: flex; flex-direction: column; height: 100vh; width: 100vw;
-        }
+        .app-container { display: flex; flex-direction: column; height: 100vh; }
 
-        /* 1. Top Header/Counter */
+        /* Header optimized for Redmi notch area */
         .header {
-            background: var(--amazon-blue); padding: 15px;
+            background: var(--primary); padding: 15px;
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid var(--amazon-orange);
+            border-bottom: 3px solid var(--amazon-orange);
+            padding-top: env(safe-area-inset-top);
         }
-        .count-badge { font-size: 2rem; font-weight: bold; color: var(--amazon-orange); }
+        .count-badge { font-size: 2.2rem; font-weight: bold; color: var(--amazon-orange); }
 
-        /* 2. Camera Section - Flexible */
+        /* Scanner Area */
         #reader { flex-grow: 1; background: #000; width: 100%; }
 
-        /* 3. Bottom Controls - Fixed at Bottom */
+        /* Bottom Controls - Large buttons for easy thumb access */
         .controls {
-            background: #222; padding: 20px;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+            background: #1a1a1a; padding: 20px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
         }
 
         button { 
-            padding: 18px; border: none; border-radius: 10px; 
+            padding: 20px; border: none; border-radius: 12px; 
             font-weight: bold; font-size: 1rem; cursor: pointer;
-            text-transform: uppercase;
         }
-        .btn-manual { background: #444; color: white; border: 1px solid #666; }
-        .btn-history { background: var(--amazon-orange); color: #232f3e; }
-        .btn-ok { background: var(--success-green); color: white; width: 100%; font-size: 1.2rem; margin-top: 15px; }
+        .btn-manual { background: #333; color: white; border: 1px solid #555; }
+        .btn-history { background: var(--amazon-orange); color: #1a1a1a; }
 
-        /* Overlays */
+        /* Popups */
         .overlay {
             display: none; position: fixed; inset: 0; 
-            background: rgba(0,0,0,0.95); z-index: 1000;
+            background: rgba(0,0,0,0.9); z-index: 1000;
             flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px; text-align: center;
+            padding: 20px;
         }
         
-        #dashboard { overflow-y: auto; background: white; color: #333; display: none; position: fixed; inset: 0; z-index: 1100; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 15px; }
-        .grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid #ddd; }
+        .modal {
+            background: white; color: #333; padding: 30px; 
+            border-radius: 20px; width: 85%; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        #dashboard { 
+            display: none; position: fixed; inset: 0; z-index: 1100; 
+            background: #f4f4f4; color: #333; overflow-y: auto; padding: 20px;
+        }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; }
+        .grid-item { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .grid-item img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
     </style>
 </head>
 <body>
 
     <div id="permission-screen" class="overlay" style="display: flex;">
-        <h1 style="color: var(--amazon-orange)">HUB TERMINAL</h1>
-        <p>Ready to start scanning boxes?</p>
-        <button onclick="initScanner()" style="background: var(--amazon-orange); padding: 20px 50px;">START CAMERA</button>
+        <h1 style="color: var(--amazon-orange)">TERMINAL START</h1>
+        <p style="margin-bottom: 30px;">Redmi Note 7 Pro Scanner Ready</p>
+        <button onclick="initScanner()" style="background: var(--amazon-orange); width: 80%;">GRANT PERMISSION</button>
     </div>
 
     <div id="main-ui" class="app-container" style="display: none;">
         <div class="header">
-            <div><small>SESSION ACTIVE</small><br><b>LOGISTICS HUB</b></div>
+            <div><small>OPERATOR MODE</small><br><b>LOGISTICS HUB</b></div>
             <div class="count-badge" id="count">0</div>
         </div>
 
         <div id="reader"></div>
 
         <div class="controls">
-            <button class="btn-manual" onclick="processEntry('Manual')">⚠️ Manual Add</button>
-            <button class="btn-history" onclick="showDashboard()">📋 History</button>
+            <button class="btn-manual" onclick="processEntry('Manual')">⚠️ DAMAGED</button>
+            <button class="btn-history" onclick="showDashboard()">📋 HISTORY</button>
         </div>
     </div>
 
     <div id="success-popup" class="overlay">
-        <div style="background: white; color: #333; padding: 30px; border-radius: 20px; width: 80%;">
-            <div style="font-size: 50px; color: var(--success-green);">✓</div>
-            <h2>SUCCESSFUL</h2>
-            <p>Box count updated and image saved.</p>
-            <button class="btn-ok" onclick="closePopup()">OK - NEXT</button>
+        <div class="modal">
+            <div style="font-size: 60px; color: var(--green);">✓</div>
+            <h2 style="margin: 10px 0;">SCANNED!</h2>
+            <p>Box successfully recorded.</p>
+            <button onclick="closePopup()" style="background: var(--green); color: white; width: 100%; padding: 15px; font-size: 1.2rem; border-radius: 10px;">OK - CONTINUE</button>
         </div>
     </div>
 
     <div id="dashboard">
-        <div style="display:flex; justify-content: space-between;">
-            <button onclick="hideDashboard()" style="background:#eee; color:#333; padding: 10px;">← CLOSE</button>
-            <button onclick="deleteAll()" style="background:#ff4444; color:white; padding: 10px;">RESET ALL</button>
+        <div style="display:flex; justify-content: space-between; align-items: center;">
+            <button onclick="hideDashboard()" style="padding: 10px 20px; background: #333; color: white;">← BACK</button>
+            <button onclick="deleteAll()" style="padding: 10px 20px; background: #ff4444; color: white;">RESET ALL</button>
         </div>
-        <h2 id="dash-total">Total Boxes: 0</h2>
+        <h2 id="dash-total" style="margin-top: 20px;">Processed: 0 Boxes</h2>
         <div id="grid" class="grid"></div>
-    </div>
-
-    <div id="full-screen" class="overlay" onclick="this.style.display='none'">
-        <img id="full-img" style="max-width: 95%; max-height: 80%; border: 3px solid white;">
-        <p style="color: white; margin-top: 20px;">Tap anywhere to close</p>
     </div>
 
     <audio id="scanSound" src="123.mp3" preload="auto"></audio>
@@ -117,13 +118,20 @@
             document.getElementById('main-ui').style.display = 'flex';
             
             html5QrCode = new Html5Qrcode("reader");
+            
+            // REDTANGLE TARGET CONFIGURATION
+            const config = { 
+                fps: 20, 
+                qrbox: { width: 320, height: 180 }, // Rectangle 16:9 target
+                aspectRatio: 1.777778 // Optimized for Redmi's screen ratio
+            };
+
             html5QrCode.start(
                 { facingMode: "environment" }, 
-                { fps: 15, qrbox: {width: 250, height: 150} }, 
-                (text) => { processEntry('Auto'); }
+                config, 
+                (text) => { processEntry('Auto Scan'); }
             ).catch(err => {
-                alert("Camera Error: Please ensure you are on HTTPS or localhost.");
-                console.error(err);
+                alert("Camera Error: Ensure you are on HTTPS.");
             });
         }
 
@@ -135,15 +143,14 @@
             count++;
             document.getElementById('count').innerText = count;
 
-            // Capture Image from Video Stream
             const video = document.querySelector('video');
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
-            const dataUrl = canvas.toDataURL("image/jpeg", 0.5);
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
             
-            images.unshift({src: dataUrl, time: new Date().toLocaleTimeString()});
+            images.unshift({src: dataUrl, time: new Date().toLocaleTimeString(), method: method});
 
             document.getElementById('success-popup').style.display = 'flex';
         }
@@ -155,24 +162,24 @@
 
         function showDashboard() {
             document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('dash-total').innerText = "Total Boxes: " + count;
+            document.getElementById('dash-total').innerText = "Processed: " + count + " Boxes";
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
             images.forEach(img => {
-                const el = document.createElement('img');
-                el.src = img.src;
-                el.onclick = () => {
-                    document.getElementById('full-img').src = img.src;
-                    document.getElementById('full-screen').style.display = 'flex';
-                };
-                grid.appendChild(el);
+                grid.innerHTML += `
+                    <div class="grid-item">
+                        <img src="${img.src}">
+                        <div style="padding:5px; font-size: 0.7rem;">
+                            ${img.time} | ${img.method}
+                        </div>
+                    </div>`;
             });
         }
 
         function hideDashboard() { document.getElementById('dashboard').style.display = 'none'; }
 
         function deleteAll() {
-            if(confirm("Delete all session data?")) {
+            if(confirm("Wipe all data?")) {
                 images = [];
                 count = 0;
                 document.getElementById('count').innerText = "0";
@@ -181,4 +188,4 @@
         }
     </script>
 </body>
-    </html>
+</html>
