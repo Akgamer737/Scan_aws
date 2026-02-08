@@ -3,100 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hub Manager Pro</title>
+    <title>Redmi Logistics Terminal</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --amazon-blue: #232f3e; --amazon-orange: #ff9900; --green: #2ecc71; }
         
         body, html { 
-            margin: 0; padding: 0; height: 100%; width: 100%;
-            font-family: Arial, sans-serif; background: #000; color: white;
-            display: flex; flex-direction: column;
+            margin: 0; padding: 0; height: 100vh; width: 100vw;
+            font-family: 'Segoe UI', Roboto, sans-serif; background: #000; color: white;
+            display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* Fixed Top Header */
+        /* 1. Header (Compact) */
         .header {
-            height: 60px; background: var(--amazon-blue);
+            height: 50px; background: var(--amazon-blue);
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 15px; border-bottom: 2px solid var(--amazon-orange);
-            z-index: 10;
         }
 
-        /* Camera fills the remaining middle space */
+        /* 2. Small Camera Area (40% height) */
         #reader { 
-            flex: 1; width: 100%; background: #000; position: relative;
+            height: 40vh !important; width: 100%; background: #000; 
         }
 
-        /* Red Rectangle Visual Target */
-        .scan-region-highlight {
-            border: 3px solid red !important;
-            border-radius: 10px;
+        /* 3. Control Panel (Filling the rest) */
+        .control-panel {
+            flex: 1; background: #1a1a1a;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 20px; justify-content: space-evenly;
         }
 
-        /* Fixed Bottom Buttons - This ensures they are ALWAYS visible */
-        .footer-controls {
-            height: 80px; background: #1a1a1a;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-            padding: 10px; border-top: 1px solid #333;
-            z-index: 10;
+        .counter-box { text-align: center; }
+        .counter-box span { font-size: 3.5rem; font-weight: bold; color: var(--amazon-orange); }
+
+        .btn-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%;
         }
 
         button { 
-            height: 100%; border: none; border-radius: 8px; 
-            font-weight: bold; font-size: 0.9rem; cursor: pointer;
+            padding: 20px 10px; border: none; border-radius: 12px; 
+            font-weight: bold; font-size: 1.1rem; cursor: pointer;
             text-transform: uppercase;
         }
-        .btn-manual { background: #444; color: white; }
+        .btn-manual { background: #444; color: white; border: 1px solid #666; }
         .btn-history { background: var(--amazon-orange); color: #1a1a1a; }
 
-        /* Success & Dashboard Overlays */
+        /* Custom Rectangle Target Color */
+        #reader__scan_region_boundary {
+            border: 4px solid red !important;
+        }
+
+        /* Popups */
         .full-overlay {
             display: none; position: fixed; inset: 0; 
-            background: rgba(0,0,0,0.95); z-index: 100;
+            background: rgba(0,0,0,0.95); z-index: 1000;
             flex-direction: column; align-items: center; justify-content: center;
             padding: 20px;
         }
 
         #dashboard { 
             display: none; position: fixed; inset: 0; background: white; 
-            color: black; z-index: 200; overflow-y: auto; padding: 15px;
+            color: black; z-index: 2000; overflow-y: auto; padding: 15px;
         }
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .grid img { width: 100%; border-radius: 5px; }
+        .grid img { width: 100%; border-radius: 8px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
     <div id="permission-screen" class="full-overlay" style="display: flex;">
-        <h2 style="color: var(--amazon-orange)">REDMI HUB TERMINAL</h2>
-        <button onclick="initScanner()" style="background: var(--amazon-orange); padding: 15px 40px; border-radius: 30px;">OPEN CAMERA</button>
+        <h2 style="color: var(--amazon-orange)">TERMINAL READY</h2>
+        <p>Redmi Note 7 Pro Optimization</p>
+        <button onclick="initScanner()" style="background: var(--amazon-orange); padding: 15px 50px; border-radius: 30px;">OPEN CAMERA</button>
     </div>
 
     <div class="header">
-        <div><b>BOX COUNT:</b></div>
-        <div style="font-size: 1.8rem; color: var(--amazon-orange)" id="count">0</div>
+        <b>HUB MANAGER</b>
+        <div style="font-size: 0.8rem;">REDMI PRO MODE</div>
     </div>
 
     <div id="reader"></div>
 
-    <div class="footer-controls">
-        <button class="btn-manual" onclick="processEntry('Damaged/Manual')">⚠️ Manual</button>
-        <button class="btn-history" onclick="showDashboard()">📋 History</button>
+    <div class="control-panel">
+        <div class="counter-box">
+            <small>BOX COUNT</small><br>
+            <span id="count">0</span>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-manual" onclick="processEntry('Manual/Damaged')">⚠️ Manual</button>
+            <button class="btn-history" onclick="showDashboard()">📋 History</button>
+        </div>
     </div>
 
     <div id="success-popup" class="full-overlay">
-        <div style="background: white; color: #333; padding: 25px; border-radius: 15px; width: 80%; text-align: center;">
-            <div style="font-size: 50px; color: var(--green);">✓</div>
-            <h3>SUCCESSFUL</h3>
-            <button onclick="closePopup()" style="background: var(--green); color: white; width: 100%; padding: 15px; border-radius: 10px; border:none; margin-top:10px;">OK - NEXT</button>
+        <div style="background: white; color: #333; padding: 30px; border-radius: 20px; width: 80%; text-align: center;">
+            <div style="font-size: 60px; color: var(--green);">✓</div>
+            <h2 style="margin:0">SUCCESS</h2>
+            <p>Box count updated.</p>
+            <button onclick="closePopup()" style="background: var(--green); color: white; width: 100%; padding: 15px; border-radius: 10px; border:none; margin-top:15px; font-weight:bold;">OK - NEXT</button>
         </div>
     </div>
 
     <div id="dashboard">
-        <div style="display:flex; justify-content: space-between; margin-bottom: 20px;">
-            <button onclick="hideDashboard()" style="background:#333; color:white; padding: 10px;">← BACK</button>
+        <div style="display:flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+            <button onclick="hideDashboard()" style="background:#333; color:white; padding: 10px;">← CLOSE</button>
             <button onclick="deleteAll()" style="background:red; color:white; padding: 10px;">DELETE ALL</button>
         </div>
+        <h3 id="dash-info">Processed: 0</h3>
         <div id="grid" class="grid"></div>
     </div>
 
@@ -114,30 +128,31 @@
             
             const config = { 
                 fps: 20, 
-                qrbox: { width: 300, height: 150 }, // Rectangular target
-                aspectRatio: 1.0
+                qrbox: { width: 280, height: 120 }, // Red rectangle target
+                aspectRatio: 1.0 
             };
 
             html5QrCode.start({ facingMode: "environment" }, config, 
-                (text) => { processEntry('Auto Scan: ' + text); }
-            ).catch(err => alert("Camera denied or not found. Check site permissions."));
+                (text) => { processEntry('Auto Scan'); }
+            ).catch(err => alert("Camera blocked. Please check browser settings."));
         }
 
         function processEntry(method) {
             html5QrCode.pause();
             sound.currentTime = 0;
-            sound.play().catch(e => console.log("Audio failed - check 123.mp3 exists"));
+            sound.play().catch(() => console.log("Audio file 123.mp3 not found"));
 
             count++;
             document.getElementById('count').innerText = count;
 
+            // Capture Frame
             const video = document.querySelector('video');
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
             
-            images.unshift({src: canvas.toDataURL("image/jpeg", 0.5), time: new Date().toLocaleTimeString()});
+            images.unshift({src: canvas.toDataURL("image/jpeg", 0.5), time: new Date().toLocaleTimeString(), type: method});
             document.getElementById('success-popup').style.display = 'flex';
         }
 
@@ -148,14 +163,19 @@
 
         function showDashboard() {
             document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('dash-info').innerText = "Processed: " + count + " Boxes";
             const grid = document.getElementById('grid');
-            grid.innerHTML = images.map(img => `<div><img src="${img.src}"><p style="font-size:10px">${img.time}</p></div>`).join('');
+            grid.innerHTML = images.map(img => `
+                <div>
+                    <img src="${img.src}">
+                    <p style="font-size:10px; margin:2px 0;">${img.time}<br>${img.type}</p>
+                </div>`).join('');
         }
 
         function hideDashboard() { document.getElementById('dashboard').style.display = 'none'; }
 
         function deleteAll() {
-            if(confirm("Delete all history?")) {
+            if(confirm("Permanently delete all data?")) {
                 images = [];
                 count = 0;
                 document.getElementById('count').innerText = "0";
@@ -164,4 +184,4 @@
         }
     </script>
 </body>
-        </html>
+</html>
