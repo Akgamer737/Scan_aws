@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Logistics Hub Pro</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root { --primary: #232f3e; --accent: #ff9900; --danger: #d9534f; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; }
+        
+        /* Permission Overlay */
+        #permission-overlay { position: fixed; inset: 0; background: var(--primary); color: white; z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        
+        /* App Layout */
+        .header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        #reader { width: 100%; max-width: 600px; margin: auto; border-bottom: 4px solid var(--accent); }
+        
+        /* Stats & Controls */
+        .stats-bar { display: flex; justify-content: space-around; background: white; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
+        
+        .main-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
+        button { padding: 18px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .btn-shutter { background: var(--accent); color: var(--primary); }
+        .btn-manual { background: #6c757d; color: white; }
+        .btn-dash { background: var(--primary); color: white; width: 92%; margin: 0 4%; }
+
+        /* Dashboard View */
+        #dashboard { display: none; padding: 20px; background: white; min-height: 100vh; }
+        .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 20px; }
+        .img-card { border: 1px solid #ddd; border-radius: 5px; overflow: hidden; font-size: 0.7rem; background: #fff; }
+        .img-card img { width: 100%; height: 100px; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+    <div id="permission-overlay">
+        <h2>Logistics Hub Terminal</h2>
+        <p>This app requires camera access to scan barcodes and document box conditions.</p>
+        <button onclick="requestCamera()" style="background: var(--accent); padding: 20px 40px; font-size: 1.2rem;">ALLOW CAMERA</button>
+    </div>
+
+    <div id="scanner-ui" style="display:none;">
+        <div class="header">
+            <span>HUB MANAGER</span>
+            <button onclick="toggleDashboard()" style="padding: 5px 15px; background: rgba(255,255,255,0.2);">View History</button>
+        </div>
+
+        <div id="reader"></div>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="count">0</div>
+                <div style="font-size: 0.8rem;">TOTAL BOXES</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="session-time">0m</div>
+                <div style="font-size: 0.8rem;">SESSION</div>
+            </div>
+        </div>
+
+        <div class="main-actions">
+            <button class="btn-shutter" onclick="processEntry('Shutter')">📸 MANUAL SHUTTER</button>
+            <button class="btn-manual" onclick="processEntry('Damaged')">⚠️ DAMAGED CODE</button>
+        </div>
+    </div>
+
+    <div id="dashboard">
+        <div style="display:flex; justify-content: space-between; align-items: center;">
+            <h2>Management Dashboard</h2>
+            <button onclick="toggleDashboard()" style="background: #eee;">Back to Scan</button>
+        </div>
+        <div id="dash-summary">Total Boxes Processed: 0</div>
+        <div class="img-grid" id="history-grid"></div>
+    </div>
+
+    <audio id="beep" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
+
+    <script>
+        let count = 0;
+        let scanHistory = [];
+        let html5QrCode;
+        const beep = document.getElementById('beep');
+
+        // 1. Request Camera Permission
+        async function requestCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                stream.getTracks().forEach(track => track.stop()); // Stop test stream
+                document.getElementById('permission-overlay').style.display = 'none';
+                document.getElementById('scanner-ui').style.display = 'block';
+                startScanner();
+            } catch (err) {
+                alert("Camera access denied. Please enable it in browser settings.");
+            }
+        }
+
+        // 2. Start Real-time Camera
+        function startScanner() {
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 15, qrbox: { width: 250, height: 150 } };
+            
+            html5QrCode.start({ facingMode: "environment" }, config, 
+                (text, result) => { processEntry('Auto Scan'); }
+            );
+        }
+
+        // 3. Process Logic (Beep, Count, Save)
+        function processEntry(type) {
+            // Play Beep
+            beep.currentTime = 0;
+            beep.play();
+
+            // Update Counter
+            count++;
+            document.getElementById('count').innerText = count;
+
+            // Capture Image
+            const video = document.querySelector('video');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const imgData = canvas.toDataURL("image/jpeg", 0.6);
+
+            // Save to Local Memory
+            const entry = {
+                id: count,
+                time: new Date().toLocaleTimeString(),
+                method: type,
+                image: imgData
+            };
+            scanHistory.unshift(entry); // Newest first
+            
+            // Temporary visual feedback
+            document.body.style.border = "5px solid #ff9900";
+            setTimeout(() => document.body.style.border = "none", 200);
+        }
+
+        // 4. Dashboard Management
+        function toggleDashboard() {
+            const dash = document.getElementById('dashboard');
+            const scanUI = document.getElementById('scanner-ui');
+            
+            if (dash.style.display === 'block') {
+                dash.style.display = 'none';
+                scanUI.style.display = 'block';
+            } else {
+                dash.style.display = 'block';
+                scanUI.style.display = 'none';
+                renderDashboard();
+            }
+        }
+
+        function renderDashboard() {
+            document.getElementById('dash-summary').innerText = `Total Boxes Processed: ${count}`;
+            const grid = document.getElementById('history-grid');
+            grid.innerHTML = '';
+
+            scanHistory.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'img-card';
+                card.innerHTML = `
+                    <img src="${item.image}">
+                    <div style="padding:5px;">
+                        <b>Box #${item.id}</b><br>
+                        ${item.time}<br>
+                        Mode: ${item.method}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
