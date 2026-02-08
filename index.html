@@ -3,80 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Logistics Manager | Secure Terminal</title>
+    <title>Logistics Manager Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --amazon-blue: #232f3e; --amazon-orange: #ff9900; --success-green: #2ecc71; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f4f4; }
         
-        /* Camera UI */
-        #reader { width: 100%; height: 50vh; background: #000; }
-        .controls { padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        
-        /* Success Popup Animation */
-        #success-popup {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            z-index: 1000; flex-direction: column; align-items: center; justify-content: center;
-            animation: fadeIn 0.3s ease;
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            font-family: 'Segoe UI', sans-serif; background: #111; color: white;
+            overflow: hidden; /* Prevents accidental scrolling */
         }
-        .modal-content {
-            background: white; padding: 30px; border-radius: 15px; text-align: center;
-            transform: scale(0.8); animation: popUp 0.4s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards;
-        }
-        .checkmark-circle { width: 80px; height: 80px; background: var(--success-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: white; font-size: 40px; }
-        
-        /* Dashboard */
-        #dashboard { display: none; padding: 20px; background: white; min-height: 100vh; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
-        .img-item { position: relative; border: 2px solid #ddd; }
-        .img-item img { width: 100%; aspect-ratio: 1; object-fit: cover; cursor: pointer; }
-        
-        /* Full Screen Viewer */
-        #full-screen-view { display: none; position: fixed; inset: 0; background: black; z-index: 2000; align-items: center; justify-content: center; }
-        #full-screen-view img { max-width: 100%; max-height: 100%; }
 
-        button { padding: 15px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .btn-ok { background: var(--success-green); color: white; width: 100%; font-size: 1.2rem; }
-        .btn-del { background: #e74c3c; color: white; margin-bottom: 20px; }
+        /* Main Container - Full Screen Flex */
+        .app-container {
+            display: flex; flex-direction: column; height: 100vh; width: 100vw;
+        }
+
+        /* 1. Top Header/Counter */
+        .header {
+            background: var(--amazon-blue); padding: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid var(--amazon-orange);
+        }
+        .count-badge { font-size: 2rem; font-weight: bold; color: var(--amazon-orange); }
+
+        /* 2. Camera Section - Flexible */
+        #reader { flex-grow: 1; background: #000; width: 100%; }
+
+        /* 3. Bottom Controls - Fixed at Bottom */
+        .controls {
+            background: #222; padding: 20px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+        }
+
+        button { 
+            padding: 18px; border: none; border-radius: 10px; 
+            font-weight: bold; font-size: 1rem; cursor: pointer;
+            text-transform: uppercase;
+        }
+        .btn-manual { background: #444; color: white; border: 1px solid #666; }
+        .btn-history { background: var(--amazon-orange); color: #232f3e; }
+        .btn-ok { background: var(--success-green); color: white; width: 100%; font-size: 1.2rem; margin-top: 15px; }
+
+        /* Overlays */
+        .overlay {
+            display: none; position: fixed; inset: 0; 
+            background: rgba(0,0,0,0.95); z-index: 1000;
+            flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; text-align: center;
+        }
         
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes popUp { to { transform: scale(1); } }
+        #dashboard { overflow-y: auto; background: white; color: #333; display: none; position: fixed; inset: 0; z-index: 1100; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 15px; }
+        .grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
-    <div id="permission-screen" style="padding: 50px; text-align: center; background: var(--amazon-blue); color: white; height: 100vh;">
-        <h2>Logistics Terminal</h2>
-        <button onclick="initScanner()" style="background: var(--amazon-orange); color: black;">ENABLE CAMERA</button>
+    <div id="permission-screen" class="overlay" style="display: flex;">
+        <h1 style="color: var(--amazon-orange)">HUB TERMINAL</h1>
+        <p>Ready to start scanning boxes?</p>
+        <button onclick="initScanner()" style="background: var(--amazon-orange); padding: 20px 50px;">START CAMERA</button>
     </div>
 
-    <div id="app" style="display:none;">
-        <div id="reader"></div>
-        <div class="controls">
-            <button onclick="processEntry('Manual')" style="background: #555; color: white;">MANUAL SCAN</button>
-            <button onclick="showDashboard()" style="background: var(--amazon-blue); color: white;">HISTORY</button>
+    <div id="main-ui" class="app-container" style="display: none;">
+        <div class="header">
+            <div><small>SESSION ACTIVE</small><br><b>LOGISTICS HUB</b></div>
+            <div class="count-badge" id="count">0</div>
         </div>
-        <h2 style="text-align:center">Box Count: <span id="count">0</span></h2>
+
+        <div id="reader"></div>
+
+        <div class="controls">
+            <button class="btn-manual" onclick="processEntry('Manual')">⚠️ Manual Add</button>
+            <button class="btn-history" onclick="showDashboard()">📋 History</button>
+        </div>
     </div>
 
-    <div id="success-popup">
-        <div class="modal-content">
-            <div class="checkmark-circle">✓</div>
-            <h2 style="margin: 0 0 10px;">SUCCESSFUL!</h2>
-            <p id="popup-detail">Box documented and saved.</p>
-            <button class="btn-ok" onclick="closePopup()">OK - NEXT BOX</button>
+    <div id="success-popup" class="overlay">
+        <div style="background: white; color: #333; padding: 30px; border-radius: 20px; width: 80%;">
+            <div style="font-size: 50px; color: var(--success-green);">✓</div>
+            <h2>SUCCESSFUL</h2>
+            <p>Box count updated and image saved.</p>
+            <button class="btn-ok" onclick="closePopup()">OK - NEXT</button>
         </div>
     </div>
 
     <div id="dashboard">
-        <button onclick="hideDashboard()">← BACK</button>
-        <h2>Admin Dashboard</h2>
-        <button class="btn-del" onclick="deleteAll()">DELETE ALL DATA</button>
+        <div style="display:flex; justify-content: space-between;">
+            <button onclick="hideDashboard()" style="background:#eee; color:#333; padding: 10px;">← CLOSE</button>
+            <button onclick="deleteAll()" style="background:#ff4444; color:white; padding: 10px;">RESET ALL</button>
+        </div>
+        <h2 id="dash-total">Total Boxes: 0</h2>
         <div id="grid" class="grid"></div>
     </div>
 
-    <div id="full-screen-view" onclick="this.style.display='none'">
-        <img id="full-img" src="">
+    <div id="full-screen" class="overlay" onclick="this.style.display='none'">
+        <img id="full-img" style="max-width: 95%; max-height: 80%; border: 3px solid white;">
+        <p style="color: white; margin-top: 20px;">Tap anywhere to close</p>
     </div>
 
     <audio id="scanSound" src="123.mp3" preload="auto"></audio>
@@ -89,27 +114,28 @@
 
         function initScanner() {
             document.getElementById('permission-screen').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
+            document.getElementById('main-ui').style.display = 'flex';
             
             html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, 
-                { fps: 10, qrbox: 250 }, 
-                (text) => { processEntry('Auto: ' + text); }
-            ).catch(err => alert("Camera error: " + err));
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                { fps: 15, qrbox: {width: 250, height: 150} }, 
+                (text) => { processEntry('Auto'); }
+            ).catch(err => {
+                alert("Camera Error: Please ensure you are on HTTPS or localhost.");
+                console.error(err);
+            });
         }
 
-        function processEntry(type) {
-            // 1. Pause Camera
+        function processEntry(method) {
             html5QrCode.pause();
-
-            // 2. Play 123.mp3
             sound.currentTime = 0;
-            sound.play().catch(e => console.log("Audio play failed: check file path"));
+            sound.play();
 
-            // 3. Count and Save
             count++;
             document.getElementById('count').innerText = count;
 
+            // Capture Image from Video Stream
             const video = document.querySelector('video');
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
@@ -117,54 +143,42 @@
             canvas.getContext('2d').drawImage(video, 0, 0);
             const dataUrl = canvas.toDataURL("image/jpeg", 0.5);
             
-            images.push({id: count, src: dataUrl, time: new Date().toLocaleTimeString()});
+            images.unshift({src: dataUrl, time: new Date().toLocaleTimeString()});
 
-            // 4. Show Success Animation
             document.getElementById('success-popup').style.display = 'flex';
         }
 
         function closePopup() {
             document.getElementById('success-popup').style.display = 'none';
-            // Resume Camera for next box
             html5QrCode.resume();
         }
 
         function showDashboard() {
-            document.getElementById('app').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
-            renderGrid();
-        }
-
-        function hideDashboard() {
-            document.getElementById('dashboard').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-        }
-
-        function renderGrid() {
-            const container = document.getElementById('grid');
-            container.innerHTML = '';
-            images.forEach((img, index) => {
-                const div = document.createElement('div');
-                div.className = 'img-item';
-                div.innerHTML = `<img src="${img.src}" onclick="openFull('${img.src}')">`;
-                container.appendChild(div);
+            document.getElementById('dash-total').innerText = "Total Boxes: " + count;
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            images.forEach(img => {
+                const el = document.createElement('img');
+                el.src = img.src;
+                el.onclick = () => {
+                    document.getElementById('full-img').src = img.src;
+                    document.getElementById('full-screen').style.display = 'flex';
+                };
+                grid.appendChild(el);
             });
         }
 
-        function openFull(src) {
-            document.getElementById('full-img').src = src;
-            document.getElementById('full-screen-view').style.display = 'flex';
-        }
+        function hideDashboard() { document.getElementById('dashboard').style.display = 'none'; }
 
         function deleteAll() {
-            if(confirm("Delete all captured data?")) {
+            if(confirm("Delete all session data?")) {
                 images = [];
                 count = 0;
                 document.getElementById('count').innerText = "0";
-                renderGrid();
-                alert("Database cleared.");
+                hideDashboard();
             }
         }
     </script>
 </body>
-</html>
+    </html>
